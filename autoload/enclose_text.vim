@@ -197,6 +197,8 @@ function! s:get_pattern(caption, prompt, table) "{{{
     let l:in_str = ''
     let l:candidates = enclose_text#complete('', '', 0)
 
+    echo printf('input enclosure %s', a:caption)
+
     try
       while 1
         let l:in = s:get_char()
@@ -210,9 +212,7 @@ function! s:get_pattern(caption, prompt, table) "{{{
         let l:count = s:count(l:candidates, '^\V'.l:in_str)
 
         if l:count < 2
-          if l:count == 1
-            echo printf('edit enclosure %s%s', a:caption, l:in_str)
-          else
+          if l:count < 1
             echo 'edit enclosure not found.' . l:in_str
           endif
 
@@ -242,19 +242,19 @@ function! s:get_enclosure(edit_mode, prompt) "{{{
   if a:edit_mode is# 'append'
     let l:from = s:get_empty_from_enclosure()
     let l:to = s:get_to_enclosure(
-          \ s:get_pattern('to> ', a:prompt, s:get_enclosure_table()))
+          \ s:get_pattern('to: ', a:prompt, s:get_enclosure_table()))
 
   elseif a:edit_mode is# 'delete'
     let l:from = s:get_from_enclosure(
-          \ s:get_pattern('from> ', a:prompt, s:get_enclosure_table()))
+          \ s:get_pattern('from: ', a:prompt, s:get_enclosure_table()))
     let l:to = s:get_empty_to_enclosure()
 
   elseif a:edit_mode is# 'change'
     let l:table = s:get_enclosure_table()
     let l:from = s:get_from_enclosure(
-          \ s:get_pattern('from> ', a:prompt, l:table))
+          \ s:get_pattern('from: ', a:prompt, l:table))
     let l:to = s:get_to_enclosure(
-          \ s:get_pattern('to> ', a:prompt, l:table))
+          \ s:get_pattern('to: ', a:prompt, l:table))
   else
     return {}
   endif
@@ -267,8 +267,8 @@ function! s:get_enclosure(edit_mode, prompt) "{{{
 endfunction "}}}
 
 function! s:get_range() "{{{
-  let l:start = getpos("'<")
-  let l:end = getpos("'>")
+  let l:start = getpos("'[")
+  let l:end = getpos("']")
 
   return {
         \ 'line': { 'begin': l:start[1], 'end': l:end[1] },
