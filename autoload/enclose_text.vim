@@ -266,43 +266,48 @@ function! s:get_enclosure(edit_mode, prompt) "{{{
   return { 'from': l:from, 'to': l:to }
 endfunction "}}}
 
-function! s:get_range() "{{{
-  let l:start = getpos("'[")
-  let l:end = getpos("']")
-
+function! s:get_range(start, end) "{{{
   return {
-        \ 'line': { 'begin': l:start[1], 'end': l:end[1] },
-        \ 'pos': { 'begin': l:start[2], 'end': l:end[2] }
+        \ 'line': { 'begin': a:start[1], 'end': a:end[1] },
+        \ 'pos': { 'begin': a:start[2], 'end': a:end[2] }
         \ }
 endfunction "}}}
 
-function! enclose_text#edit_enclosure(motion, edit_mode, prompt) "{{{
+function! s:edit_enclosure(motion, range, edit_mode, prompt) "{{{
   if a:motion ==# 'char'
-    call s:visual_edit_char(s:get_range(), s:get_enclosure(a:edit_mode, a:prompt))
+    call s:visual_edit_char(a:range, s:get_enclosure(a:edit_mode, a:prompt))
   elseif a:motion ==# 'line'
-    call s:visual_edit_line(s:get_range(), s:get_enclosure(a:edit_mode, a:prompt))
+    call s:visual_edit_line(a:range, s:get_enclosure(a:edit_mode, a:prompt))
   elseif a:motion ==# 'block'
-    call s:visual_edit_block(s:get_range(), s:get_enclosure(a:edit_mode, a:prompt))
+    call s:visual_edit_block(a:range, s:get_enclosure(a:edit_mode, a:prompt))
   else
-    call s:visual_edit_char(s:get_range(), s:get_enclosure(a:edit_mode, a:prompt))
+    call s:visual_edit_char(a:range, s:get_enclosure(a:edit_mode, a:prompt))
   endif
+endfunction "}}}
+
+function! enclose_text#edit_enclosure(motion, edit_mode, prompt) "{{{
+  let l:range = s:get_range(getpos("'["), getpos("']"))
+
+  call s:edit_enclosure(a:motion, l:range, a:edit_mode, a:prompt)
 endfunction "}}}
 
 function! enclose_text#edit_enclosure_visual(edit_mode, prompt) "{{{
   let l:mode = visualmode()
 
   if l:mode ==# 'v'
-    let l:motion_wiseness = 'char'
+    let l:motion = 'char'
   elseif l:mode ==# 'V'
-    let l:motion_wiseness = 'line'
+    let l:motion = 'line'
   elseif l:mode ==# ''
-    let l:motion_wiseness = 'block'
+    let l:motion = 'block'
   else
     echo 'no range to operation.'
     return 
   endif
 
-  call enclose_text#edit_enclosure(l:motion, a:edit_mode, a:prompt)
+  let l:range = s:get_range(getpos("'<"), getpos("'>"))
+
+  call s:edit_enclosure(l:motion, l:range, a:edit_mode, a:prompt)
 endfunction "}}}
 
 
