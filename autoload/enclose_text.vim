@@ -239,17 +239,17 @@ function! s:get_enclosure_table() "{{{
 endfunction "}}}
 
 function! s:get_enclosure(edit_mode, prompt) "{{{
-  if a:edit_mode is# 'append'
+  if a:edit_mode ==# 'append'
     let l:from = s:get_empty_from_enclosure()
     let l:to = s:get_to_enclosure(
           \ s:get_pattern('to: ', a:prompt, s:get_enclosure_table()))
 
-  elseif a:edit_mode is# 'delete'
+  elseif a:edit_mode ==# 'delete'
     let l:from = s:get_from_enclosure(
           \ s:get_pattern('from: ', a:prompt, s:get_enclosure_table()))
     let l:to = s:get_empty_to_enclosure()
 
-  elseif a:edit_mode is# 'change'
+  elseif a:edit_mode ==# 'change'
     let l:table = s:get_enclosure_table()
     let l:from = s:get_from_enclosure(
           \ s:get_pattern('from: ', a:prompt, l:table))
@@ -276,18 +276,33 @@ function! s:get_range() "{{{
         \ }
 endfunction "}}}
 
-function! enclose_text#edit_enclosure(edit_mode, prompt) "{{{
-  let l:mode = visualmode()
-
-  if l:mode is# 'v'
+function! enclose_text#edit_enclosure(motion, edit_mode, prompt) "{{{
+  if a:motion ==# 'char'
     call s:visual_edit_char(s:get_range(), s:get_enclosure(a:edit_mode, a:prompt))
-  elseif l:mode is# 'V'
+  elseif a:motion ==# 'line'
     call s:visual_edit_line(s:get_range(), s:get_enclosure(a:edit_mode, a:prompt))
-  elseif l:mode is# ''
+  elseif a:motion ==# 'block'
     call s:visual_edit_block(s:get_range(), s:get_enclosure(a:edit_mode, a:prompt))
   else
-    echo 'no range to operation.'
+    call s:visual_edit_char(s:get_range(), s:get_enclosure(a:edit_mode, a:prompt))
   endif
+endfunction "}}}
+
+function! enclose_text#edit_enclosure_visual(edit_mode, prompt) "{{{
+  let l:mode = visualmode()
+
+  if l:mode ==# 'v'
+    let l:motion_wiseness = 'char'
+  elseif l:mode ==# 'V'
+    let l:motion_wiseness = 'line'
+  elseif l:mode ==# ''
+    let l:motion_wiseness = 'block'
+  else
+    echo 'no range to operation.'
+    return 
+  endif
+
+  call enclose_text#edit_enclosure(l:motion, a:edit_mode, a:prompt)
 endfunction "}}}
 
 
