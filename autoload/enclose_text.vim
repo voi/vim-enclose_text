@@ -1,5 +1,5 @@
-if get(g:, 'enclose#no_default_enclosure_table', 0)
-  let s:enclose_enclosure_table = get(g:, 'g:enclose#enclosure_table', {})
+if get(g:, 'enclose_text#no_default_enclosure_table', 0)
+  let s:enclose_enclosure_table = get(g:, 'g:enclose_text#enclosure_table', {})
 
 else
   function! s:merge_table(base, overload) "{{{
@@ -106,9 +106,37 @@ function! s:visual_edit_char(range, enclosure) "{{{
   endif
 
   call setline(a:range.line.begin, l:lines)
+
+  if get(g:, 'enclose_text#delete_blank_line_after_edit', 0)
+    execute printf('%dg/^\s*$/delete', a:range.line.end)
+    execute printf('%dg/^\s*$/delete', a:range.line.begin)
+  endif
 endfunction "}}}
 
-function! s:visual_edit_line(range, enclosure) "{{{
+function! s:visual_edit_line_block(edit_mode, range, enclosure) "{{{
+  if empty(a:enclosure)
+    return
+  endif
+
+  if a:edit_mode ==# 'append'
+    call append(a:range.line.end, [a:enclosure.to.close])
+    call append(a:range.line.begin - 1, [a:enclosure.to.open])
+
+  else " delete,change
+    call setline(a:range.line.end, substitute(
+          \ getline(a:range.line.end), a:enclosure.from.close, a:enclosure.to.close, ''))
+    call setline(a:range.line.begin, substitute(
+          \ getline(a:range.line.begin), a:enclosure.from.open, a:enclosure.to.open, ''))
+
+    if get(g:, 'enclose_text#delete_blank_line_after_edit', 0)
+      execute printf('%dg/^\s*$/delete', a:range.line.end)
+      execute printf('%dg/^\s*$/delete', a:range.line.begin)
+    endif
+
+  endif
+endfunction "}}}
+
+function! s:visual_edit_line_each(range, enclosure) "{{{
   if empty(a:enclosure)
     return
   endif
@@ -273,13 +301,22 @@ function! s:get_range(start, end) "{{{
         \ }
 endfunction "}}}
 
-function! s:edit_enclosure(motion, range, edit_mode, prompt) "{{{
+function! s:edit_enclosure(motion, range, edit_mode, line_mode, prompt) "{{{
   if a:motion ==# 'char'
     call s:visual_edit_char(a:range, s:get_enclosure(a:edit_mode, a:prompt))
+
   elseif a:motion ==# 'line'
-    call s:visual_edit_line(a:range, s:get_enclosure(a:edit_mode, a:prompt))
+    if a:line_mode ==# 'each'
+      call s:visual_edit_line_each(a:range, s:get_enclosure(a:edit_mode, a:prompt))
+
+    else
+      call s:visual_edit_line_block(a:edit_mode, a:range, s:get_enclosure(a:edit_mode, a:prompt))
+
+    endif
+
   elseif a:motion ==# 'block'
     call s:visual_edit_block(a:range, s:get_enclosure(a:edit_mode, a:prompt))
+
   else
     call s:visual_edit_char(a:range, s:get_enclosure(a:edit_mode, a:prompt))
   endif
@@ -288,7 +325,13 @@ endfunction "}}}
 function! enclose_text#edit_enclosure(motion, edit_mode, prompt) "{{{
   let l:range = s:get_range(getpos("'["), getpos("']"))
 
-  call s:edit_enclosure(a:motion, l:range, a:edit_mode, a:prompt)
+  call s:edit_enclosure(a:motion, l:range, a:edit_mode, 'block', a:prompt)
+endfunction "}}}
+
+function! enclose_text#edit_enclosure_each(motion, edit_mode, prompt) "{{{
+  let l:range = s:get_range(getpos("'["), getpos("']"))
+
+  call s:edit_enclosure(a:motion, l:range, a:edit_mode, 'each', a:prompt)
 endfunction "}}}
 
 function! enclose_text#edit_enclosure_visual(edit_mode, prompt) "{{{
@@ -296,8 +339,10 @@ function! enclose_text#edit_enclosure_visual(edit_mode, prompt) "{{{
 
   if l:mode ==# 'v'
     let l:motion = 'char'
+
   elseif l:mode ==# 'V'
     let l:motion = 'line'
+
   elseif l:mode ==# ''
     let l:motion = 'block'
   else
@@ -307,7 +352,7 @@ function! enclose_text#edit_enclosure_visual(edit_mode, prompt) "{{{
 
   let l:range = s:get_range(getpos("'<"), getpos("'>"))
 
-  call s:edit_enclosure(l:motion, l:range, a:edit_mode, a:prompt)
+  call s:edit_enclosure(l:motion, l:range, a:edit_mode, 'block', a:prompt)
 endfunction "}}}
 
 

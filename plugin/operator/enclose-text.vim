@@ -30,6 +30,10 @@ call operator#user#define('enclose-append', 'operator#enclose_text#append')
 call operator#user#define('enclose-delete', 'operator#enclose_text#delete')
 call operator#user#define('enclose-change', 'operator#enclose_text#change')
 
+call operator#user#define('enclose-append-each', 'operator#enclose_text#append_each')
+call operator#user#define('enclose-delete-each', 'operator#enclose_text#delete_each')
+call operator#user#define('enclose-change-each', 'operator#enclose_text#change_each')
+
 let g:loaded_operator_enclose = 1
 
 " __END__
