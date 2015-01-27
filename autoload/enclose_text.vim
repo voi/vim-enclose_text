@@ -217,46 +217,41 @@ function! s:count(list, pattern) "{{{
   return l:count
 endfunction "}}}
 
-function! s:get_pattern(caption, prompt, table) "{{{
-  if a:prompt
-    let l:in_str = input(a:caption, '', 'customlist,enclose#complete')
+function! s:get_pattern(caption, table) "{{{
+  let l:in_str = ''
+  let l:candidates = enclose_text#complete('', '', 0)
 
-  else
+  echo printf('enclosures: %s', join(l:candidates, ' ')) "\n" printf('input enclosure %s', a:caption)
+
+  try
+    while 1
+      let l:in = s:get_char()
+
+      if l:in =~ "\<Esc>" || l:in =~ "\<C-C>"
+        echo 'edit enclosure canceled.'
+        break
+      endif
+
+      let l:in_str .= l:in
+      let l:count = s:count(l:candidates, '^\V'.l:in_str)
+
+      if l:count < 2
+        if l:count < 1
+          echo 'edit enclosure not found.' . l:in_str
+        endif
+
+        break
+      endif
+    endwhile
+
+  catch
+    echo v:exception
+
     let l:in_str = ''
-    let l:candidates = enclose_text#complete('', '', 0)
 
-    echo printf('input enclosure %s', a:caption)
+  endtry
 
-    try
-      while 1
-        let l:in = s:get_char()
-
-        if l:in =~ "\<Esc>" || l:in =~ "\<C-C>"
-          echo 'edit enclosure canceled.'
-          break
-        endif
-
-        let l:in_str .= l:in
-        let l:count = s:count(l:candidates, '^\V'.l:in_str)
-
-        if l:count < 2
-          if l:count < 1
-            echo 'edit enclosure not found.' . l:in_str
-          endif
-
-          break
-        endif
-      endwhile
-
-    catch
-      echo v:exception
-
-      let l:in_str = ''
-
-    endtry
-
-    return get(a:table, l:in_str, {})
-  endif
+  return get(a:table, l:in_str, {})
 endfunction "}}}
 
 function! s:get_enclosure_table() "{{{
@@ -266,23 +261,19 @@ function! s:get_enclosure_table() "{{{
         \ )
 endfunction "}}}
 
-function! s:get_enclosure(edit_mode, prompt) "{{{
+function! s:get_enclosure(edit_mode) "{{{
   if a:edit_mode ==# 'append'
     let l:from = s:get_empty_from_enclosure()
-    let l:to = s:get_to_enclosure(
-          \ s:get_pattern('to: ', a:prompt, s:get_enclosure_table()))
+    let l:to = s:get_to_enclosure(s:get_pattern('to: ', s:get_enclosure_table()))
 
   elseif a:edit_mode ==# 'delete'
-    let l:from = s:get_from_enclosure(
-          \ s:get_pattern('from: ', a:prompt, s:get_enclosure_table()))
+    let l:from = s:get_from_enclosure(s:get_pattern('from: ', s:get_enclosure_table()))
     let l:to = s:get_empty_to_enclosure()
 
   elseif a:edit_mode ==# 'change'
     let l:table = s:get_enclosure_table()
-    let l:from = s:get_from_enclosure(
-          \ s:get_pattern('from: ', a:prompt, l:table))
-    let l:to = s:get_to_enclosure(
-          \ s:get_pattern('to: ', a:prompt, l:table))
+    let l:from = s:get_from_enclosure(s:get_pattern('from: ', l:table))
+    let l:to = s:get_to_enclosure(s:get_pattern('to: ', l:table))
   else
     return {}
   endif
@@ -301,40 +292,40 @@ function! s:get_range(start, end) "{{{
         \ }
 endfunction "}}}
 
-function! s:edit_enclosure(motion, range, edit_mode, line_mode, prompt) "{{{
+function! s:edit_enclosure(motion, range, edit_mode, line_mode) "{{{
   if a:motion ==# 'char'
-    call s:visual_edit_char(a:range, s:get_enclosure(a:edit_mode, a:prompt))
+    call s:visual_edit_char(a:range, s:get_enclosure(a:edit_mode))
 
   elseif a:motion ==# 'line'
     if a:line_mode ==# 'each'
-      call s:visual_edit_line_each(a:range, s:get_enclosure(a:edit_mode, a:prompt))
+      call s:visual_edit_line_each(a:range, s:get_enclosure(a:edit_mode))
 
     else
-      call s:visual_edit_line_block(a:edit_mode, a:range, s:get_enclosure(a:edit_mode, a:prompt))
+      call s:visual_edit_line_block(a:edit_mode, a:range, s:get_enclosure(a:edit_mode))
 
     endif
 
   elseif a:motion ==# 'block'
-    call s:visual_edit_block(a:range, s:get_enclosure(a:edit_mode, a:prompt))
+    call s:visual_edit_block(a:range, s:get_enclosure(a:edit_mode))
 
   else
-    call s:visual_edit_char(a:range, s:get_enclosure(a:edit_mode, a:prompt))
+    call s:visual_edit_char(a:range, s:get_enclosure(a:edit_mode))
   endif
 endfunction "}}}
 
-function! enclose_text#edit_enclosure(motion, edit_mode, prompt) "{{{
+function! enclose_text#edit_enclosure(motion, edit_mode) "{{{
   let l:range = s:get_range(getpos("'["), getpos("']"))
 
-  call s:edit_enclosure(a:motion, l:range, a:edit_mode, 'block', a:prompt)
+  call s:edit_enclosure(a:motion, l:range, a:edit_mode, 'block')
 endfunction "}}}
 
-function! enclose_text#edit_enclosure_each(motion, edit_mode, prompt) "{{{
+function! enclose_text#edit_enclosure_each(motion, edit_mode) "{{{
   let l:range = s:get_range(getpos("'["), getpos("']"))
 
-  call s:edit_enclosure(a:motion, l:range, a:edit_mode, 'each', a:prompt)
+  call s:edit_enclosure(a:motion, l:range, a:edit_mode, 'each')
 endfunction "}}}
 
-function! enclose_text#edit_enclosure_visual(edit_mode, prompt) "{{{
+function! enclose_text#edit_enclosure_visual(edit_mode, line_mode) "{{{
   let l:mode = visualmode()
 
   if l:mode ==# 'v'
@@ -352,7 +343,7 @@ function! enclose_text#edit_enclosure_visual(edit_mode, prompt) "{{{
 
   let l:range = s:get_range(getpos("'<"), getpos("'>"))
 
-  call s:edit_enclosure(l:motion, l:range, a:edit_mode, 'block', a:prompt)
+  call s:edit_enclosure(l:motion, l:range, a:edit_mode, a:line_mode)
 endfunction "}}}
 
 
