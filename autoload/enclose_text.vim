@@ -5,9 +5,9 @@ else
   function! s:merge_table(base, overload) "{{{
     for [l:type, l:blocks] in items(a:overload)
       if has_key(a:base, l:type)
-        call extend(a:base[l:type], a:blocks)
+        call extend(a:base[l:type], l:blocks)
       else
-        let a:base[l:type] = a:blocks
+        let a:base[l:type] = l:blocks
       endif
     endfor
 
@@ -142,7 +142,7 @@ function! s:visual_edit_line_each(range, enclosure) "{{{
   endif
 
   let l:lines = getline(a:range.line.begin, a:range.line.end)
-  let l:lines = map(l:lines, "s:text_edit_both(v:val, a:enclosure)")
+  let l:lines = map(l:lines, 's:text_edit_both(v:val, a:enclosure)')
 
   call setline(a:range.line.begin, l:lines)
 endfunction "}}}
@@ -153,7 +153,7 @@ function! s:visual_edit_block(range, enclosure) "{{{
   endif
 
   let l:lines = getline(a:range.line.begin, a:range.line.end)
-  let l:lines = map(l:lines, "s:text_part_edit_both(v:val, a:range.pos, a:enclosure)")
+  let l:lines = map(l:lines, 's:text_part_edit_both(v:val, a:range.pos, a:enclosure)')
 
   call setline(a:range.line.begin, l:lines)
 endfunction "}}}
@@ -198,7 +198,7 @@ endfunction "}}}
 function! s:get_char()
   let c = getchar()
 
-  if c =~ '^\d\+$'
+  if c =~# '^\d\+$'
     return nr2char(c)
   else
     return c
@@ -227,7 +227,7 @@ function! s:get_pattern(caption, table) "{{{
     while 1
       let l:in = s:get_char()
 
-      if l:in =~ "\<Esc>" || l:in =~ "\<C-C>"
+      if l:in =~# "\<Esc>" || l:in =~# "\<C-C>"
         echo 'edit enclosure canceled.'
         break
       endif
