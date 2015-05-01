@@ -119,8 +119,10 @@ function! s:visual_edit_line_block(edit_mode, range, enclosure) "{{{
   endif
 
   if a:edit_mode ==# 'append'
-    call append(a:range.line.end, [a:enclosure.to.close])
-    call append(a:range.line.begin - 1, [a:enclosure.to.open])
+    call append(a:range.line.end,
+          \ [substitute(a:enclosure.to.close, '\v(^\s+|\s+$)', '', 'g')])
+    call append(a:range.line.begin - 1,
+          \ [substitute(a:enclosure.to.open, '\v(^\s+|\s+$)', '', 'g')])
 
   else " delete,change
     call setline(a:range.line.end, substitute(
@@ -325,7 +327,7 @@ function! enclose_text#edit_enclosure_each(motion, edit_mode) "{{{
   call s:edit_enclosure(a:motion, l:range, a:edit_mode, 'each')
 endfunction "}}}
 
-function! enclose_text#edit_enclosure_visual(edit_mode, line_mode) "{{{
+function! enclose_text#edit_enclosure_command(edit_mode, line_mode) "{{{
   let l:mode = visualmode()
 
   if l:mode ==# 'v'
